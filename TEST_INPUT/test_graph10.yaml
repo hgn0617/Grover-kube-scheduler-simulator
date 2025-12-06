@@ -1,0 +1,224 @@
+# 测试图10: 地图着色问题
+# 5个区域，8条边，理论色数=3
+
+---
+# 创建5个节点（理论只需3个，但经典调度器会用5个）
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: 区域1 (与区域2,3,4冲突)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: region-0
+  labels:
+    app: region-0
+    quantum-batch: "graph10"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["region-1", "region-2", "region-3"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: 区域2 (与区域1,3,4,5冲突)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: region-1
+  labels:
+    app: region-1
+    quantum-batch: "graph10"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["region-0", "region-2", "region-3", "region-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: 区域3 (与区域1,2,4冲突)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: region-2
+  labels:
+    app: region-2
+    quantum-batch: "graph10"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["region-0", "region-1", "region-3"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: 区域4 (与区域1,2,3,5冲突)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: region-3
+  labels:
+    app: region-3
+    quantum-batch: "graph10"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["region-0", "region-1", "region-2", "region-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: 区域5 (与区域2,4冲突)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: region-4
+  labels:
+    app: region-4
+    quantum-batch: "graph10"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["region-1", "region-3"]
+        topologyKey: kubernetes.io/hostname

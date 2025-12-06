@@ -1,0 +1,285 @@
+# Fan Graph: Path with hub connected to all vertices
+# 6个Pod，9条冲突边
+
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+  labels:
+    kubernetes.io/hostname: node-1
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+  labels:
+    kubernetes.io/hostname: node-2
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+  labels:
+    kubernetes.io/hostname: node-3
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+  labels:
+    kubernetes.io/hostname: node-4
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+  labels:
+    kubernetes.io/hostname: node-5
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-6
+  labels:
+    kubernetes.io/hostname: node-6
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: Path-0 (连接: Path-1, Hub)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-0
+  labels:
+    app: app-0
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: Path-1 (连接: Path-0, Path-2, Hub)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  labels:
+    app: app-1
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-2", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: Path-2 (连接: Path-1, Path-3, Hub)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  labels:
+    app: app-2
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-3", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: Path-3 (连接: Path-2, Path-4, Hub)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  labels:
+    app: app-3
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-2", "app-4", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: Path-4 (连接: Path-3, Hub)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-4
+  labels:
+    app: app-4
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-3", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 5: Hub (连接: Path-0, Path-1, Path-2, Path-3, Path-4)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-5
+  labels:
+    app: app-5
+    quantum-batch: "23_fan"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-1", "app-2", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname

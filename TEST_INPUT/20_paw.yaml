@@ -1,0 +1,208 @@
+# Paw Graph: Triangle with one pendant edge
+# 4个Pod，4条冲突边
+
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+  labels:
+    kubernetes.io/hostname: node-1
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+  labels:
+    kubernetes.io/hostname: node-2
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+  labels:
+    kubernetes.io/hostname: node-3
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+  labels:
+    kubernetes.io/hostname: node-4
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+  labels:
+    kubernetes.io/hostname: node-5
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: Toe1 (连接: Toe2, Body)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-0
+  labels:
+    app: app-0
+    quantum-batch: "20_paw"
+  annotations:
+    quantum-scheduler.io/batch-size: "4"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: Toe2 (连接: Toe1, Body)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  labels:
+    app: app-1
+    quantum-batch: "20_paw"
+  annotations:
+    quantum-scheduler.io/batch-size: "4"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: Body (连接: Toe1, Toe2, Tail)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  labels:
+    app: app-2
+    quantum-batch: "20_paw"
+  annotations:
+    quantum-scheduler.io/batch-size: "4"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-1", "app-3"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: Tail (连接: Body)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  labels:
+    app: app-3
+    quantum-batch: "20_paw"
+  annotations:
+    quantum-scheduler.io/batch-size: "4"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-2"]
+        topologyKey: kubernetes.io/hostname

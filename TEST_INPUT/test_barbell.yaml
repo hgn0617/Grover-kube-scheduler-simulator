@@ -1,0 +1,254 @@
+# 哑铃图测试场景：6个Pod，7条冲突边
+# 西部三角形(0,1,2) + 桥(2-3) + 东部三角形(3,4,5)
+# 理论色数：3色
+
+# 5个节点
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: 西A (连接西B, 西C)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: west-a
+  labels:
+    app: west-a
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["west-b", "west-c"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: 西B (连接西A, 西C)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: west-b
+  labels:
+    app: west-b
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["west-a", "west-c"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: 西C (连接西A, 西B, 东A) - 桥节点
+apiVersion: v1
+kind: Pod
+metadata:
+  name: west-c
+  labels:
+    app: west-c
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["west-a", "west-b", "east-a"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: 东A (连接西C, 东B, 东C) - 桥节点
+apiVersion: v1
+kind: Pod
+metadata:
+  name: east-a
+  labels:
+    app: east-a
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["west-c", "east-b", "east-c"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: 东B (连接东A, 东C)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: east-b
+  labels:
+    app: east-b
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["east-a", "east-c"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 5: 东C (连接东A, 东B)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: east-c
+  labels:
+    app: east-c
+    quantum-batch: "barbell"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["east-a", "east-b"]
+        topologyKey: kubernetes.io/hostname

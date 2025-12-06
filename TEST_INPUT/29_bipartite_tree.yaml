@@ -1,0 +1,332 @@
+# 二分树图：两组节点的树状连接，二分图，色数2。
+# 7个Pod，6条冲突边
+
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+  labels:
+    kubernetes.io/hostname: node-1
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+  labels:
+    kubernetes.io/hostname: node-2
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+  labels:
+    kubernetes.io/hostname: node-3
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+  labels:
+    kubernetes.io/hostname: node-4
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+  labels:
+    kubernetes.io/hostname: node-5
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-6
+  labels:
+    kubernetes.io/hostname: node-6
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-7
+  labels:
+    kubernetes.io/hostname: node-7
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: Root (连接: L1-A, L1-B)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-0
+  labels:
+    app: app-0
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: L1-A (连接: Root, L2-A1, L2-A2)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  labels:
+    app: app-1
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: L1-B (连接: Root, L2-B1, L2-B2)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  labels:
+    app: app-2
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-5", "app-6"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: L2-A1 (连接: L1-A)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  labels:
+    app: app-3
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: L2-A2 (连接: L1-A)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-4
+  labels:
+    app: app-4
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 5: L2-B1 (连接: L1-B)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-5
+  labels:
+    app: app-5
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 6: L2-B2 (连接: L1-B)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-6
+  labels:
+    app: app-6
+    quantum-batch: "29_bipartite_tree"
+  annotations:
+    quantum-scheduler.io/batch-size: "7"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-2"]
+        topologyKey: kubernetes.io/hostname

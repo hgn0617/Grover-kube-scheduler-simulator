@@ -1,0 +1,224 @@
+# 路径图P5测试场景：5个Pod，4条边
+# 线性连接：北京-天津-济南-南京-上海
+# 理论色数：2色（二分图）
+
+# 5个节点
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: 北京 (连接天津)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: beijing
+  labels:
+    app: beijing
+    quantum-batch: "path-p5"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["tianjin"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: 天津 (连接北京, 济南)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tianjin
+  labels:
+    app: tianjin
+    quantum-batch: "path-p5"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["beijing", "jinan"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: 济南 (连接天津, 南京)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jinan
+  labels:
+    app: jinan
+    quantum-batch: "path-p5"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["tianjin", "nanjing"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: 南京 (连接济南, 上海)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nanjing
+  labels:
+    app: nanjing
+    quantum-batch: "path-p5"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["jinan", "shanghai"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: 上海 (连接南京)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shanghai
+  labels:
+    app: shanghai
+    quantum-batch: "path-p5"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["nanjing"]
+        topologyKey: kubernetes.io/hostname

@@ -7,8 +7,26 @@ services:
         - conf:/config
         - ${PWD}/simulator/cmd/scheduler:/host-config:ro
       command: sh -c "cp -rf /host-config/* /config/"
+  quantum-service:
+    build:
+      context: ./simulator/scheduler/quantum_scheduler_service
+      dockerfile: Dockerfile
+    container_name: quantum-service
+    ports:
+      - "8000:8000"
+    restart: always
+    networks:
+      - simulator-internal-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
   simulator-scheduler:
-    image: registry.k8s.io/scheduler-simulator/debuggable-scheduler:v0.4.0
+    build:
+      context: ./simulator
+      dockerfile: cmd/scheduler/Dockerfile
+    image: grover-quantum-scheduler
     container_name: simulator-scheduler
     environment:
       - KUBECONFIG=/config/kubeconfig.yaml
@@ -17,6 +35,7 @@ services:
     depends_on:
       - init-container
       - simulator-cluster
+      - quantum-service
     restart: always
     tty: true
     networks:

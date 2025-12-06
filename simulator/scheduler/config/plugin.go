@@ -1,15 +1,22 @@
 package config
 
 import (
+	"context"
+
 	"golang.org/x/xerrors"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	configv1 "k8s.io/kube-scheduler/config/v1"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins"
-	"k8s.io/kubernetes/pkg/scheduler/framework/runtime"
+	frameworkruntime "k8s.io/kubernetes/pkg/scheduler/framework/runtime"
+
+	"sigs.k8s.io/kube-scheduler-simulator/simulator/scheduler/plugin/quantum"
 )
 
-var outOfTreeRegistries = runtime.Registry{
-	// TODO(user): add your plugins registries here.
-}
+// outOfTreeRegistries holds custom (out-of-tree) plugins.
+// It is empty by default and populated via SetOutOfTreeRegistries.
+var outOfTreeRegistries = frameworkruntime.Registry{}
 
 // RegisteredMultiPointPluginNames returns all registered multipoint plugin names.
 // in-tree plugins and your original plugins listed in outOfTreeRegistries above.
@@ -46,16 +53,34 @@ func OutOfTreeMultiPointPluginNames() []string {
 	return registeredOutOfTreeMultiPointName
 }
 
-func InTreeRegistries() runtime.Registry {
+func InTreeRegistries() frameworkruntime.Registry {
 	return plugins.NewInTreeRegistry()
 }
 
-func OutOfTreeRegistries() runtime.Registry {
+func OutOfTreeRegistries() frameworkruntime.Registry {
+	// FORCE INJECTION: Ensure QuantumScheduler is always present when requested.
+	if _, ok := outOfTreeRegistries[quantum.Name]; !ok {
+		klog.InfoS("Force injecting QuantumScheduler into registry")
+		outOfTreeRegistries[quantum.Name] = func(_ context.Context, args apiruntime.Object, handle framework.Handle) (framework.Plugin, error) {
+			return quantum.New(args, handle)
+		}
+	}
+	klog.InfoS("OutOfTreeRegistries accessed", "current_plugins", keysOfRegistry(outOfTreeRegistries))
 	return outOfTreeRegistries
 }
 
-func SetOutOfTreeRegistries(r runtime.Registry) {
+func SetOutOfTreeRegistries(r frameworkruntime.Registry) {
+	klog.InfoS("SetOutOfTreeRegistries called", "plugins", keysOfRegistry(r))
 	for k, v := range r {
 		outOfTreeRegistries[k] = v
 	}
+}
+
+// keysOfRegistry returns the plugin names in a registry for logging.
+func keysOfRegistry(r frameworkruntime.Registry) []string {
+	keys := make([]string, 0, len(r))
+	for k := range r {
+		keys = append(keys, k)
+	}
+	return keys
 }
