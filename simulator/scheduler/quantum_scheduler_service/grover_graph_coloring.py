@@ -13,6 +13,7 @@ from pathlib import Path
 import json
 import math
 import networkx as nx
+import random
 from graph_analysis import GraphColoringAnalyzer
 
 
@@ -460,8 +461,11 @@ class GroverGraphColoring:
         for q in qubits:
             qc.h(q)
     
-    def build_circuit(self):
-        """构建完整的Grover电路"""
+    def build_circuit_with_iterations(self, grover_iterations: int):
+        """构建Grover电路（指定迭代次数）"""
+        if grover_iterations < 0:
+            raise ValueError("grover_iterations must be non-negative")
+
         # 创建量子寄存器
         main_qubits = QuantumRegister(self.total_qubits, 'q')
         # 辅助量子位：n个节点颜色有效性检查 + m条边约束检查 + 1个最终标记
@@ -476,7 +480,7 @@ class GroverGraphColoring:
             qc.h(q)
         
         # Grover迭代
-        for iteration in range(self.grover_iterations):
+        for _ in range(grover_iterations):
             # Oracle
             self.build_oracle(qc, main_qubits, ancilla_qubits)
             
@@ -487,6 +491,10 @@ class GroverGraphColoring:
         qc.measure(main_qubits, classical_bits)
         
         return qc
+
+    def build_circuit(self):
+        """构建完整的Grover电路（使用当前配置的迭代次数）"""
+        return self.build_circuit_with_iterations(self.grover_iterations)
     
     def run_simulation(self, shots=1000):
         """
@@ -546,14 +554,18 @@ class GroverGraphColoring:
         
         Args:
             max_attempts: 最大重试次数
-            final_shots: 成功后的完整观测次数
+            final_shots: 成功后的完整观测次数（设为0跳过验证）
             
         Returns:
             success: 是否找到有效解
             coloring: 有效的着色方案
             attempts: 尝试次数
             final_counts: 最终的完整测量结果
+            qc: 量子电路
+            solve_time_ms: 求解时间（毫秒，不含验证）
         """
+        import time
+        
         print(f"\n{'='*70}")
         print(f"🔬 量子坍缩模拟模式")
         print(f"{'='*70}")
@@ -573,6 +585,9 @@ class GroverGraphColoring:
         print(f"\n{'='*70}")
         print(f"开始量子态坍缩模拟...")
         print(f"{'='*70}\n")
+        
+        # 开始计时（求解时间）
+        solve_start_time = time.time()
         
         for attempt in range(1, max_attempts + 1):
             print(f"\n🎯 第 {attempt} 次量子测量（坍缩）")
@@ -601,11 +616,15 @@ class GroverGraphColoring:
             is_valid = self.is_valid_coloring(coloring)
             
             if is_valid:
+                # 记录求解时间（找到有效解的时刻）
+                solve_time_ms = (time.time() - solve_start_time) * 1000
+                
                 print(f"  ✅ 找到有效解！")
                 print(f"\n{'='*70}")
                 print(f"🎉 量子坍缩成功！")
                 print(f"{'='*70}")
                 print(f"尝试次数: {attempt}")
+                print(f"求解时间: {solve_time_ms:.3f}ms")
                 print(f"成功率: {1/attempt*100:.2f}% (理论期望: ~{1/self.search_space*100:.4f}%)")
                 
                 # 显示着色方案
@@ -616,18 +635,21 @@ class GroverGraphColoring:
                     color = coloring[node]
                     print(f"  {node_name}: 颜色{color}")
                 
-                # 成功后进行完整观测（10000次）
-                print(f"\n{'='*70}")
-                print(f"📊 执行完整量子测量（{final_shots}次）验证概率分布...")
-                print(f"{'='*70}\n")
+                # 成功后进行完整观测（可选）
+                final_counts = None
+                if final_shots > 0:
+                    print(f"\n{'='*70}")
+                    print(f"📊 执行完整量子测量（{final_shots}次）验证概率分布...")
+                    print(f"{'='*70}\n")
+                    
+                    final_job = simulator.run(qc, shots=final_shots)
+                    final_result = final_job.result()
+                    final_counts = final_result.get_counts()
+                    
+                    print(f"✅ 完整测量完成！")
                 
-                final_job = simulator.run(qc, shots=final_shots)
-                final_result = final_job.result()
-                final_counts = final_result.get_counts()
-                
-                print(f"✅ 完整测量完成！")
-                
-                return True, coloring, attempt, final_counts, qc
+                # 返回时附带求解时间
+                return True, coloring, attempt, final_counts, qc, solve_time_ms
             
             else:
                 # 显示为什么失败
@@ -641,13 +663,131 @@ class GroverGraphColoring:
                 print(f"  → 量子态坍缩到无效解，重新运行电路...")
         
         # 达到最大尝试次数
+        solve_time_ms = (time.time() - solve_start_time) * 1000
         print(f"\n{'='*70}")
         print(f"⚠️  达到最大尝试次数 ({max_attempts})")
         print(f"{'='*70}")
         print(f"说明：Grover算法的成功概率取决于迭代次数和Oracle质量")
         print(f"      当前配置未能在 {max_attempts} 次坍缩中找到有效解")
+        print(f"总耗时: {solve_time_ms:.3f}ms")
         
-        return False, None, max_attempts, None, qc
+        return False, None, max_attempts, None, qc, solve_time_ms
+
+    def run_with_bbht_collapse_simulation(
+        self,
+        max_attempts: int = 100,
+        final_shots: int = 0,
+        *,
+        max_grover_iterations: int = 20,
+        lambda_factor: float = 1.2,
+        seed: int | None = None,
+        verbose: bool = False,
+    ):
+        """
+        BBHT风格的坍缩模拟：每次attempt随机选择Grover迭代次数并验证。
+
+        说明：
+        - 这里的“attempt”指：构建电路→单次测量(shots=1)→解码→验证。
+        - 为控制电路深度，迭代次数会被限制在 [0, max_grover_iterations]。
+        - 该实现用于工程验证与实验标定，不等价于理想模型下的完整BBHT最坏情况保证。
+        """
+        import time
+
+        if max_attempts <= 0:
+            return False, None, 0, None, None, 0.0
+        if max_grover_iterations < 0:
+            raise ValueError("max_grover_iterations must be non-negative")
+        if lambda_factor <= 1.0:
+            raise ValueError("lambda_factor must be > 1.0")
+
+        rng = random.Random(seed)
+        simulator = AerSimulator()
+
+        if verbose:
+            print(f"\n{'='*70}")
+            print(f"🔬 BBHT坍缩模拟模式")
+            print(f"{'='*70}")
+            print(f"最大尝试次数: {max_attempts}")
+            print(f"最大Grover迭代上限: {max_grover_iterations}")
+            print(f"lambda_factor: {lambda_factor}")
+
+        solve_start_time = time.time()
+
+        # BBHT: m逐步增长，每次随机选 r ∈ [0, m-1]
+        m = 1
+        m_max = max_grover_iterations + 1  # r<=max_grover_iterations
+
+        last_qc = None
+        iterations_used: list[int] = []
+        oracle_calls_total = 0
+
+        # 供外部（如/service）记录实验指标
+        self.last_bbht_stats = {
+            "max_attempts": int(max_attempts),
+            "max_grover_iterations": int(max_grover_iterations),
+            "lambda_factor": float(lambda_factor),
+            "seed": seed,
+            "attempts_used": 0,
+            "iterations_used": iterations_used,
+            "oracle_calls": 0,
+            "success": False,
+        }
+
+        for attempt in range(1, max_attempts + 1):
+            r = rng.randrange(m) if m > 0 else 0
+            iterations_used.append(int(r))
+            oracle_calls_total += int(r)
+
+            # 构建电路并单次测量
+            qc = self.build_circuit_with_iterations(r)
+            last_qc = qc
+
+            job = simulator.run(qc, shots=1)
+            result = job.result()
+            counts = result.get_counts()
+
+            bitstring = list(counts.keys())[0]
+            bitstring_reversed = bitstring[::-1]
+
+            coloring = self.decode_bitstring(bitstring_reversed)
+            if coloring is not None and self.is_valid_coloring(coloring):
+                solve_time_ms = (time.time() - solve_start_time) * 1000
+                final_counts = None
+
+                if final_shots > 0:
+                    final_job = simulator.run(qc, shots=final_shots)
+                    final_result = final_job.result()
+                    final_counts = final_result.get_counts()
+
+                if verbose:
+                    print(f"✅ BBHT成功: attempt={attempt}, iterations={r}, time={solve_time_ms:.3f}ms")
+
+                self.last_bbht_stats.update(
+                    {
+                        "attempts_used": int(attempt),
+                        "oracle_calls": int(oracle_calls_total),
+                        "success": True,
+                    }
+                )
+
+                return True, coloring, attempt, final_counts, qc, solve_time_ms
+
+            # 增大m
+            m = min(m_max, int(math.ceil(lambda_factor * m)))
+
+        solve_time_ms = (time.time() - solve_start_time) * 1000
+        if verbose:
+            print(f"⚠️  BBHT未找到解: attempts={max_attempts}, time={solve_time_ms:.3f}ms")
+
+        self.last_bbht_stats.update(
+            {
+                "attempts_used": int(max_attempts),
+                "oracle_calls": int(oracle_calls_total),
+                "success": False,
+            }
+        )
+
+        return False, None, max_attempts, None, last_qc, solve_time_ms
     
     def analyze_results(self, counts):
         """分析测量结果（移除后期验证，直接报告量子测量原始结果）"""
@@ -929,7 +1069,7 @@ def solve_with_collapse(json_file, num_colors=None, max_attempts=100,
     solver = GroverGraphColoring(json_file, num_colors)
     
     # 运行坍缩模拟
-    success, coloring, attempts, final_counts, circuit = solver.run_with_collapse_simulation(
+    success, coloring, attempts, final_counts, circuit, solve_time_ms = solver.run_with_collapse_simulation(
         max_attempts=max_attempts, 
         final_shots=final_shots
     )
@@ -977,4 +1117,3 @@ def solve_with_collapse(json_file, num_colors=None, max_attempts=100,
 # 注意：批量求解功能已移至 run_grover_solver.py
 # 该文件提供了更完善的交互式界面、超时控制和内存检查
 # 请使用: python run_grover_solver.py
-

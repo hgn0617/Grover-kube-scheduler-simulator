@@ -7,21 +7,21 @@ services:
         - conf:/config
         - ${PWD}/simulator/cmd/scheduler:/host-config:ro
       command: sh -c "cp -rf /host-config/* /config/"
-  quantum-service:
-    build:
-      context: ./simulator/scheduler/quantum_scheduler_service
-      dockerfile: Dockerfile
-    container_name: quantum-service
-    ports:
-      - "8000:8000"
-    restart: always
-    networks:
-      - simulator-internal-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+  # quantum-service:
+  #   build:
+  #     context: ./simulator/scheduler/quantum_scheduler_service
+  #     dockerfile: Dockerfile
+  #   container_name: quantum-service
+  #   ports:
+  #     - "8000:8000"
+  #   restart: always
+  #   networks:
+  #     - simulator-internal-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
   simulator-scheduler:
     build:
       context: ./simulator
@@ -35,7 +35,7 @@ services:
     depends_on:
       - init-container
       - simulator-cluster
-      - quantum-service
+      # - quantum-service  # 远程部署时注释掉
     restart: always
     tty: true
     networks:

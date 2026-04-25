@@ -1,0 +1,238 @@
+# Connected graph selected deterministically from the official NetworkX Graph Atlas. (n=5, m=6, chi=3, greedy=3, dsatur=3).
+# 5个Pod，6条冲突边
+
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+  labels:
+    kubernetes.io/hostname: node-1
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+  labels:
+    kubernetes.io/hostname: node-2
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+  labels:
+    kubernetes.io/hostname: node-3
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+  labels:
+    kubernetes.io/hostname: node-4
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+  labels:
+    kubernetes.io/hostname: node-5
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0: Pod0 (连接: Pod1)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-0
+  labels:
+    app: app-0
+    quantum-batch: "05_atlas_n05_dense_id0040"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1: Pod1 (连接: Pod0, Pod2, Pod3, Pod4)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  labels:
+    app: app-1
+    quantum-batch: "05_atlas_n05_dense_id0040"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-2", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2: Pod2 (连接: Pod1, Pod3, Pod4)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  labels:
+    app: app-2
+    quantum-batch: "05_atlas_n05_dense_id0040"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3: Pod3 (连接: Pod1, Pod2)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  labels:
+    app: app-3
+    quantum-batch: "05_atlas_n05_dense_id0040"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4: Pod4 (连接: Pod1, Pod2)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-4
+  labels:
+    app: app-4
+    quantum-batch: "05_atlas_n05_dense_id0040"
+  annotations:
+    quantum-scheduler.io/batch-size: "5"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2"]
+        topologyKey: kubernetes.io/hostname

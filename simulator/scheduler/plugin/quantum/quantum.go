@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -17,8 +16,9 @@ import (
 )
 
 const (
-	Name              = "QuantumScheduler"
-	quantumServiceURL = "http://quantum-service:8000"
+	Name = "QuantumScheduler"
+	// quantumServiceURL = "http://quantum-service:8000"
+	quantumServiceURL = "http://localhost:8000"
 )
 
 // QuantumScheduler uses quantum computing to optimize pod placement
@@ -65,7 +65,7 @@ func New(_ runtime.Object, h framework.Handle) (framework.Plugin, error) {
 	klog.InfoS("QuantumScheduler plugin initializing", "serviceURL", quantumServiceURL)
 	return &QuantumScheduler{
 		handle: h,
-		client: &http.Client{Timeout: 180 * time.Second},
+		client: &http.Client{Timeout: 3600 * time.Second}, // 1小时超时
 		cache:  &assignmentCache{assignments: make(map[string]int)},
 	}, nil
 }
@@ -184,11 +184,20 @@ func (qs *QuantumScheduler) callQuantumService(ctx context.Context, pod *v1.Pod)
 	return &response, nil
 }
 
-// Score ranks nodes for the pod
+// Score ranks nodes for the pod.
+//
+// Strict single-source mode: only the Operator-written annotation
+// `quantum-scheduler.io/recommended-node` is authoritative. The previous
+// Priority 2 (per-scheduler in-memory cache) and Priority 3 (per-pod
+// /schedule fallback) paths are intentionally disabled to eliminate stale
+// cache leakage across batches and race conditions where the Operator's
+// batch annotation has not yet propagated through the scheduler's
+// informer. Operator MUST write the annotation BEFORE clearing scheduling
+// gates (see quantum_operator.py two-phase commit).
 func (qs *QuantumScheduler) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
 	klog.V(4).InfoS("QuantumScheduler.Score called", "pod", pod.Name, "node", nodeName)
 
-	// Priority 1: Check if Operator has pre-computed assignment via annotation
+	// Priority 1 (only path): Operator-written annotation is authoritative.
 	if pod.Annotations != nil {
 		if recommendedNode, ok := pod.Annotations["quantum-scheduler.io/recommended-node"]; ok {
 			if nodeName == recommendedNode {
@@ -198,7 +207,6 @@ func (qs *QuantumScheduler) Score(ctx context.Context, state *framework.CycleSta
 					"score", 100)
 				return 100, framework.NewStatus(framework.Success)
 			}
-			// Node doesn't match pre-computed assignment, return very low score
 			klog.V(4).InfoS("QuantumScheduler: node doesn't match pre-computed assignment",
 				"pod", pod.Name,
 				"node", nodeName,
@@ -207,39 +215,14 @@ func (qs *QuantumScheduler) Score(ctx context.Context, state *framework.CycleSta
 		}
 	}
 
-	// Priority 2: Check cache from previous quantum service calls
-	if nodeIdx, ok := qs.cache.get(pod.Name); ok {
-		expectedNodeName := fmt.Sprintf("node-%d", nodeIdx)
-		if nodeName == expectedNodeName {
-			klog.V(4).InfoS("Quantum boost from cache", "pod", pod.Name, "node", nodeName)
-			return 100, framework.NewStatus(framework.Success)
-		}
-		return 0, framework.NewStatus(framework.Success)
-	}
-
-	// Priority 3: Call quantum service for real-time computation (fallback)
-	response, err := qs.callQuantumService(ctx, pod)
-	if err != nil {
-		klog.V(4).InfoS("Quantum service error, using default", "error", err)
-		return 0, framework.NewStatus(framework.Success)
-	}
-
-	if response == nil || !response.Success {
-		return 0, framework.NewStatus(framework.Success)
-	}
-
-	// Check if this node is preferred
-	if nodeIdx, ok := response.Assignments[pod.Name]; ok {
-		expectedNodeName := fmt.Sprintf("node-%d", nodeIdx)
-		if nodeName == expectedNodeName {
-			klog.InfoS("Quantum recommendation",
-				"pod", pod.Name,
-				"preferredNode", nodeName,
-				"attempts", response.Attempts)
-			return 100, framework.NewStatus(framework.Success)
-		}
-	}
-
+	// No annotation yet: refuse to contribute a score. With all other score
+	// plugins disabled in scheduler.yaml and Filter plugins still enforcing
+	// PodAntiAffinity, an unannotated pod will tie across feasible nodes and
+	// the default scheduler ordering applies. In practice this path should be
+	// unreachable because the Operator only clears scheduling gates AFTER all
+	// annotations for the batch are written.
+	klog.V(2).InfoS("QuantumScheduler: no recommendation annotation present; strict mode returns 0",
+		"pod", pod.Name)
 	return 0, framework.NewStatus(framework.Success)
 }
 

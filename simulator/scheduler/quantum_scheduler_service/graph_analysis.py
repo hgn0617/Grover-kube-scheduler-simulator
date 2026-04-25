@@ -46,8 +46,14 @@ class GraphColoringAnalyzer:
         # 检查是否是二分图（2-着色）
         is_bipartite = nx.is_bipartite(self.G)
         analysis['is_bipartite'] = is_bipartite
-        
-        if is_bipartite:
+
+        # 特殊情况：无边图（色数为1）
+        if m == 0 and n > 0:
+            analysis['chromatic_lower'] = 1
+            analysis['chromatic_upper'] = 1
+            analysis['chromatic_number'] = 1
+            analysis['recommended_colors'] = 1
+        elif is_bipartite:
             # 二分图色数为2
             analysis['chromatic_lower'] = 2
             analysis['chromatic_upper'] = 2
@@ -152,5 +158,4 @@ def analyze_all_graphs(input_dir='./input'):
 
 if __name__ == '__main__':
     analyze_all_graphs()
-
 

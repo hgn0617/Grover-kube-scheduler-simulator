@@ -1,0 +1,286 @@
+# Hard instance for evaluation: chi=3, greedy(LF)=4, DSATUR=3; estimated_qubits=28, estimated_mem_gib=4.0.
+# meta: k_opt=3, k_greedy=4, k_dsatur=3, qubits=28, mem_gib≈4.0
+# 6 pods, 9 edges, 6 nodes in cluster
+
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-1
+  labels:
+    kubernetes.io/hostname: node-1
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-2
+  labels:
+    kubernetes.io/hostname: node-2
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-3
+  labels:
+    kubernetes.io/hostname: node-3
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-4
+  labels:
+    kubernetes.io/hostname: node-4
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-5
+  labels:
+    kubernetes.io/hostname: node-5
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-6
+  labels:
+    kubernetes.io/hostname: node-6
+    node-role.kubernetes.io/worker: ""
+status:
+  capacity:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+  allocatable:
+    cpu: "8"
+    memory: 16Gi
+    pods: "110"
+---
+# Pod 0 (conflicts_with: pod-1, pod-2)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-0
+  labels:
+    app: app-0
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 1 (conflicts_with: pod-0, pod-3, pod-4)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  labels:
+    app: app-1
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 2 (conflicts_with: pod-0, pod-3, pod-5)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  labels:
+    app: app-2
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-0", "app-3", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 3 (conflicts_with: pod-1, pod-2, pod-4, pod-5)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  labels:
+    app: app-3
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-2", "app-4", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 4 (conflicts_with: pod-1, pod-3, pod-5)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-4
+  labels:
+    app: app-4
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-1", "app-3", "app-5"]
+        topologyKey: kubernetes.io/hostname
+---
+# Pod 5 (conflicts_with: pod-2, pod-3, pod-4)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-5
+  labels:
+    app: app-5
+    quantum-batch: "40_greedy_fail_n8_m9_e"
+  annotations:
+    quantum-scheduler.io/batch-size: "6"
+spec:
+  schedulingGates:
+  - name: "quantum-scheduler.io/computing"
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: "1"
+        memory: 1Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values: ["app-2", "app-3", "app-4"]
+        topologyKey: kubernetes.io/hostname

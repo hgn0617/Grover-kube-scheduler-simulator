@@ -1,0 +1,302 @@
+[
+  {
+    "case": "31_both_fail_n7_m11",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "32_greedy_fail_dense_n7_m12",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "33_greedy_fail_n8_m9_a",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "34_greedy_fail_n8_m9_b",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "35_greedy_fail_bipartite_n8_m8",
+    "n": 8,
+    "m": 8,
+    "k_opt": 2,
+    "k_greedy": 3,
+    "k_dsatur": 2,
+    "qubits": 33,
+    "mem_gib": 128.0
+  },
+  {
+    "case": "36_greedy_fail_n7_m12_b",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "37_greedy_fail_n7_m12_c",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "38_greedy_fail_n7_m12_d",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "39_greedy_fail_n7_m12_e",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "40_greedy_fail_n8_m9_c",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "41_greedy_fail_n8_m9_d",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "42_greedy_fail_n8_m9_e",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "43_greedy_fail_n8_m9_f",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "44_greedy_fail_bipartite_n8_m7_a",
+    "n": 8,
+    "m": 7,
+    "k_opt": 2,
+    "k_greedy": 3,
+    "k_dsatur": 2,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "45_greedy_fail_bipartite_n8_m8_b",
+    "n": 8,
+    "m": 8,
+    "k_opt": 2,
+    "k_greedy": 3,
+    "k_dsatur": 2,
+    "qubits": 33,
+    "mem_gib": 128.0
+  },
+  {
+    "case": "46_both_fail_n7_m11_b",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "47_both_fail_n7_m11_c",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "48_greedy_fail_n7_m12_f",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "49_greedy_fail_n7_m12_g",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "50_greedy_fail_n7_m12_h",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "51_greedy_fail_n7_m12_i",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "52_greedy_fail_n8_m9_g",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "53_greedy_fail_n8_m9_h",
+    "n": 6,
+    "m": 9,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 3,
+    "qubits": 28,
+    "mem_gib": 4.0
+  },
+  {
+    "case": "54_greedy_fail_bipartite_n8_m7_b",
+    "n": 8,
+    "m": 7,
+    "k_opt": 2,
+    "k_greedy": 3,
+    "k_dsatur": 2,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "55_greedy_fail_bipartite_n8_m8_c",
+    "n": 8,
+    "m": 8,
+    "k_opt": 2,
+    "k_greedy": 3,
+    "k_dsatur": 2,
+    "qubits": 33,
+    "mem_gib": 128.0
+  },
+  {
+    "case": "56_dsatur_fail_n7_m10_a",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "57_dsatur_fail_n7_m10_b",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "58_dsatur_fail_n7_m10_c",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "59_dsatur_fail_n7_m10_d",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  },
+  {
+    "case": "60_dsatur_fail_n7_m10_e",
+    "n": 7,
+    "m": 10,
+    "k_opt": 3,
+    "k_greedy": 4,
+    "k_dsatur": 4,
+    "qubits": 32,
+    "mem_gib": 64.0
+  }
+]

@@ -10,12 +10,78 @@ import tempfile
 import sys
 import traceback
 import random
+import time
+import os
 from pathlib import Path
+from datetime import datetime
+import math
 
 # 直接导入 Grover 算法
 from grover_graph_coloring import GroverGraphColoring
+from graph_analysis import GraphColoringAnalyzer
 
 app = FastAPI()
+
+# 时间记录日志文件
+TIMING_LOG_FILE = Path("grover_timing.csv")
+DESCENT_LOG_FILE = Path("grover_descent_log.csv")
+
+def init_timing_log():
+    """初始化时间记录文件"""
+    if not TIMING_LOG_FILE.exists():
+        with open(TIMING_LOG_FILE, 'w') as f:
+            f.write("timestamp,endpoint,num_pods,num_edges,num_colors,grover_iterations,grover_time_ms,attempts,success\n")
+
+def log_timing(endpoint, num_pods, num_edges, num_colors, grover_iterations, grover_time_sec, attempts, success):
+    """记录Grover算法执行时间（毫秒精度）"""
+    init_timing_log()
+    grover_time_ms = grover_time_sec * 1000  # 转换为毫秒
+    with open(TIMING_LOG_FILE, 'a') as f:
+        f.write(f"{datetime.now().isoformat()},{endpoint},{num_pods},{num_edges},{num_colors},{grover_iterations},{grover_time_ms:.3f},{attempts},{success}\n")
+    print(f"[TIMING] ⏱️ Grover求解时间: {grover_time_ms:.3f}ms (已记录到 {TIMING_LOG_FILE})", file=sys.stderr)
+
+
+def init_descent_log():
+    """初始化budget-descent日志文件"""
+    if not DESCENT_LOG_FILE.exists():
+        with open(DESCENT_LOG_FILE, "w") as f:
+            f.write(
+                "timestamp,endpoint,graph_name,num_pods,num_edges,num_nodes_budget,"
+                "k_upper,k_start,k_found,attempt_budget,max_grover_iterations,bbht_lambda,"
+                "attempts_total,oracle_calls_total,solve_time_ms,success,attempts_by_k,oracle_calls_by_k\n"
+            )
+
+
+def log_descent(
+    *,
+    endpoint: str,
+    graph_name: str,
+    num_pods: int,
+    num_edges: int,
+    num_nodes_budget: int,
+    k_upper: int,
+    k_start: int,
+    k_found: int | None,
+    attempt_budget: int,
+    max_grover_iterations: int,
+    bbht_lambda: float,
+    attempts_total: int,
+    oracle_calls_total: int,
+    solve_time_ms: float,
+    success: bool,
+    attempts_by_k: dict,
+    oracle_calls_by_k: dict,
+):
+    init_descent_log()
+    with open(DESCENT_LOG_FILE, "a") as f:
+        f.write(
+            f"{datetime.now().isoformat()},{endpoint},{graph_name},{num_pods},{num_edges},{num_nodes_budget},"
+            f"{k_upper},{k_start},{'' if k_found is None else int(k_found)},{attempt_budget},"
+            f"{max_grover_iterations},{bbht_lambda},"
+            f"{attempts_total},{oracle_calls_total},{solve_time_ms:.3f},{success},"
+            f"\"{json.dumps(attempts_by_k, ensure_ascii=False)}\","
+            f"\"{json.dumps(oracle_calls_by_k, ensure_ascii=False)}\"\n"
+        )
 
 @app.get("/health")
 async def health():
@@ -65,7 +131,7 @@ async def schedule(request: Request):
         body = await request.json()
         pods = body.get("pods") or []
         num_nodes = int(body.get("num_nodes") or 0)
-        max_attempts = int(body.get("max_attempts") or 20)
+        max_attempts = int(body.get("max_attempts") or 8)
 
         if not pods or num_nodes <= 0:
             resp = {
@@ -130,9 +196,9 @@ async def schedule(request: Request):
             solver = GroverGraphColoring(temp_file.name, num_colors=actual_colors_used)
             grover_iterations = getattr(solver, "grover_iterations", 0)
 
-            success, coloring, attempts, _, _ = solver.run_with_collapse_simulation(
+            success, coloring, attempts, _, _, _ = solver.run_with_collapse_simulation(
                 max_attempts=max_attempts,
-                final_shots=100,
+                final_shots=0,
             )
 
             print(f"[/schedule] Grover finished: success={success}, attempts={attempts}", file=sys.stderr)
@@ -264,7 +330,7 @@ async def prioritize_nodes(request: Request):
             
             solver = GroverGraphColoring(temp_file.name, num_colors=actual_colors_used)
             
-            success, coloring, attempts, _, _ = solver.run_with_collapse_simulation(max_attempts=20, final_shots=100)
+            success, coloring, attempts, _, _, _ = solver.run_with_collapse_simulation(max_attempts=8, final_shots=0)
             
             print(f"[{pod_name}] Grover 运行结束. 成功={success}, 尝试={attempts}", file=sys.stderr)
             
@@ -341,30 +407,98 @@ async def batch_schedule(request: Request):
     try:
         body = await request.json()
         pods = body.get("pods", [])
-        num_nodes = body.get("num_nodes", 5)
+        graph_name = str(body.get("graph_name") or body.get("name") or "k8s_batch_graph")
+        num_nodes = int(body.get("num_nodes", 5))
+
+        attempt_budget_raw = body.get("attempt_budget")
+        if attempt_budget_raw is None:
+            attempt_budget_raw = body.get("max_attempts")
+
+        # 可选：用(p_min, delta)推导尝试次数T（不提供则使用默认或显式值）
+        if attempt_budget_raw is None:
+            p_min = body.get("p_min")
+            delta = body.get("delta")
+            if p_min is not None and delta is not None:
+                p_min = float(p_min)
+                delta = float(delta)
+                if not (0.0 < p_min < 1.0):
+                    raise ValueError("p_min must be in (0,1)")
+                if not (0.0 < delta < 1.0):
+                    raise ValueError("delta must be in (0,1)")
+                attempt_budget_raw = int(math.ceil(math.log(delta) / math.log(1.0 - p_min)))
+            else:
+                attempt_budget_raw = int(
+                    os.getenv("QUANTUM_DEFAULT_ATTEMPT_BUDGET")
+                    or os.getenv("QUANTUM_ATTEMPT_BUDGET")
+                    or "1"
+                )
+
+        attempt_budget = int(attempt_budget_raw)
+        hard_max_attempt_budget = os.getenv("QUANTUM_HARD_MAX_ATTEMPT_BUDGET")
+        if hard_max_attempt_budget is not None and hard_max_attempt_budget != "":
+            try:
+                hard_max_attempt_budget_int = int(hard_max_attempt_budget)
+            except Exception:
+                hard_max_attempt_budget_int = 0
+            if hard_max_attempt_budget_int > 0:
+                attempt_budget = min(attempt_budget, hard_max_attempt_budget_int)
+        max_grover_iterations = int(
+            body.get("max_grover_iterations")
+            or body.get("max_iterations")
+            or os.getenv("QUANTUM_MAX_GROVER_ITERATIONS")
+            or "20"
+        )
+        hard_max_grover_iterations = os.getenv("QUANTUM_HARD_MAX_GROVER_ITERATIONS")
+        if hard_max_grover_iterations is not None and hard_max_grover_iterations != "":
+            try:
+                hard_max_grover_iterations_int = int(hard_max_grover_iterations)
+            except Exception:
+                hard_max_grover_iterations_int = 0
+            if hard_max_grover_iterations_int > 0:
+                max_grover_iterations = min(max_grover_iterations, hard_max_grover_iterations_int)
+        bbht_lambda = float(body.get("bbht_lambda") or 1.2)
+        seed = body.get("seed")
+        seed = int(seed) if seed is not None else None
         
-        print(f"\n[/batch_schedule] 收到批量请求: {len(pods)} 个 Pod, {num_nodes} 个可用节点", file=sys.stderr)
+        print(
+            f"\n[/batch_schedule] 收到批量请求: {len(pods)} 个 Pod, {num_nodes} 个可用节点, "
+            f"T={attempt_budget}, max_iter={max_grover_iterations}",
+            file=sys.stderr,
+        )
         
         if not pods:
             return {"success": False, "assignments": {}, "error": "no pods"}
         
         # 构建完整的全局冲突图（所有Pod）
-        all_pod_names = [p["pod_name"] for p in pods]
+        all_pod_names: list[str] = []
+        for p in pods:
+            pod_name = p.get("pod_name")
+            if pod_name and pod_name not in all_pod_names:
+                all_pod_names.append(pod_name)
+            for conflict in p.get("conflicts_with", []) or []:
+                if conflict and conflict not in all_pod_names:
+                    all_pod_names.append(conflict)
+
         pod_to_idx = {name: i for i, name in enumerate(all_pod_names)}
-        
-        edges = []
+
+        edges: list[list[int]] = []
+        edges_seen: set[tuple[int, int]] = set()
         for pod in pods:
             pod_name = pod["pod_name"]
             idx1 = pod_to_idx[pod_name]
             for conflict in pod.get("conflicts_with", []):
                 if conflict in pod_to_idx:
                     idx2 = pod_to_idx[conflict]
-                    edge = sorted([idx1, idx2])
-                    if edge not in edges:
-                        edges.append(edge)
+                    u, v = (idx1, idx2) if idx1 <= idx2 else (idx2, idx1)
+                    if u == v:
+                        continue
+                    if (u, v) in edges_seen:
+                        continue
+                    edges_seen.add((u, v))
+                    edges.append([u, v])
         
         graph_data = {
-            "name": "k8s_batch_graph",
+            "name": graph_name,
             "nodes": len(all_pod_names),
             "edges": edges
         }
@@ -377,39 +511,163 @@ async def batch_schedule(request: Request):
         temp_file.close()
         
         try:
-            # 图分析 + Grover求解
-            temp_solver = GroverGraphColoring(temp_file.name, num_colors=None)
-            recommended_colors = temp_solver.num_colors
-            actual_colors = min(recommended_colors, num_nodes)
-            if recommended_colors > num_nodes:
-                actual_colors = recommended_colors
-            
-            print(f"[/batch_schedule] 图分析: 推荐{recommended_colors}色, 可用{num_nodes}节点, 使用{actual_colors}色", file=sys.stderr)
-            
-            solver = GroverGraphColoring(temp_file.name, num_colors=actual_colors)
-            success, coloring, attempts, _, _ = solver.run_with_collapse_simulation(max_attempts=20, final_shots=100)
-            
-            print(f"[/batch_schedule] Grover完成: success={success}, attempts={attempts}", file=sys.stderr)
+            analyzer = GraphColoringAnalyzer(temp_file.name)
+            k_u = int(analyzer.analysis.get("recommended_colors") or 0)
+            k_start = min(num_nodes, k_u) if num_nodes > 0 else k_u
+
+            if len(edges) == 0:
+                if num_nodes <= 0:
+                    return {"success": False, "assignments": {}, "error": "num_nodes <= 0"}
+
+                assignments = {pod_name: "node-1" for pod_name in all_pod_names}
+                return {
+                    "success": True,
+                    "assignments": assignments,
+                    "colors_used": 1,
+                    "attempts": 0,
+                    "k_upper": k_u,
+                    "k_found": 1,
+                    "message": "edgeless graph",
+                }
+
+            if k_start < 2:
+                return {
+                    "success": False,
+                    "assignments": {},
+                    "error": "insufficient node budget",
+                    "k_upper": k_u,
+                    "k_start": k_start,
+                }
+
+            print(
+                f"[/batch_schedule] 图分析: greedy上界 k_u={k_u}, 节点预算 k_start={k_start}",
+                file=sys.stderr,
+            )
+
+            # budget-descent: k_start, k_start-1, ... ; stop after first failure
+            best_k = None
+            best_coloring = None
+            attempts_total = 0
+            solve_time_ms_total = 0.0
+            attempts_by_k = {}
+            oracle_calls_total = 0
+            oracle_calls_by_k = {}
+
+            for k in range(k_start, 1, -1):
+                solver = GroverGraphColoring(temp_file.name, num_colors=k)
+
+                success, coloring, attempts, _, _, solve_time_ms = solver.run_with_bbht_collapse_simulation(
+                    max_attempts=attempt_budget,
+                    final_shots=0,
+                    max_grover_iterations=max_grover_iterations,
+                    lambda_factor=bbht_lambda,
+                    seed=(None if seed is None else seed + (k * 1000)),
+                    verbose=False,
+                )
+
+                attempts_total += int(attempts)
+                solve_time_ms_total += float(solve_time_ms)
+                attempts_by_k[str(k)] = int(attempts)
+                oracle_calls = int(getattr(solver, "last_bbht_stats", {}).get("oracle_calls") or 0)
+                oracle_calls_total += oracle_calls
+                oracle_calls_by_k[str(k)] = oracle_calls
+
+                if success and coloring:
+                    best_k = k
+                    best_coloring = coloring
+                    print(
+                        f"[/batch_schedule] ✓ k={k} 可行 (attempts={attempts}/{attempt_budget}, "
+                        f"max_iter={max_grover_iterations})",
+                        file=sys.stderr,
+                    )
+                    continue
+
+                print(
+                    f"[/batch_schedule] ✗ k={k} 未找到解 (attempts={attempts}/{attempt_budget}, "
+                    f"max_iter={max_grover_iterations})，停止下降",
+                    file=sys.stderr,
+                )
+                break
+
+            success = best_coloring is not None and best_k is not None
+
+            # 记录到日志文件（时间已经是毫秒）
+            log_timing(
+                "/batch_schedule",
+                len(all_pod_names),
+                len(edges),
+                int(best_k or k_start),
+                max_grover_iterations,
+                solve_time_ms_total / 1000,
+                attempts_total,
+                success,
+            )
+
+            log_descent(
+                endpoint="/batch_schedule",
+                graph_name=graph_name,
+                num_pods=len(all_pod_names),
+                num_edges=len(edges),
+                num_nodes_budget=num_nodes,
+                k_upper=k_u,
+                k_start=k_start,
+                k_found=best_k,
+                attempt_budget=attempt_budget,
+                max_grover_iterations=max_grover_iterations,
+                bbht_lambda=bbht_lambda,
+                attempts_total=attempts_total,
+                oracle_calls_total=oracle_calls_total,
+                solve_time_ms=solve_time_ms_total,
+                success=success,
+                attempts_by_k=attempts_by_k,
+                oracle_calls_by_k=oracle_calls_by_k,
+            )
+
+            print(
+                f"[/batch_schedule] Descent完成: success={success}, k_found={best_k}, "
+                f"attempts_total={attempts_total}, 求解时间={solve_time_ms_total:.3f}ms",
+                file=sys.stderr,
+            )
             
             # 映射颜色到节点名
             assignments = {}
-            if success and coloring:
+            if success and best_coloring:
+                if best_k > num_nodes:
+                    return {
+                        "success": False,
+                        "assignments": {},
+                        "error": "k_found exceeds available nodes",
+                        "k_upper": k_u,
+                        "k_found": best_k,
+                        "num_nodes": num_nodes,
+                    }
+
                 for pod_name in all_pod_names:
                     idx = pod_to_idx[pod_name]
-                    color = coloring.get(idx)
+                    color = best_coloring.get(idx)
                     if color is not None:
-                        node_idx = (color % num_nodes) + 1
+                        node_idx = int(color) + 1
                         node_name = f"node-{node_idx}"
                         assignments[pod_name] = node_name
                         print(f"[/batch_schedule] ✓ {pod_name} → {node_name} (颜色{color})", file=sys.stderr)
                 
-                print(f"[/batch_schedule] 📊 成功分配 {len(assignments)} 个Pod，使用{actual_colors}色", file=sys.stderr)
+                print(f"[/batch_schedule] 📊 成功分配 {len(assignments)} 个Pod，使用{best_k}色", file=sys.stderr)
             
             return {
                 "success": bool(assignments),
                 "assignments": assignments,
-                "colors_used": actual_colors,
-                "attempts": attempts
+                "colors_used": int(best_k or 0),
+                "attempts": int(attempts_total),
+                "oracle_calls": int(oracle_calls_total),
+                "k_upper": k_u,
+                "k_start": k_start,
+                "k_found": best_k,
+                "attempts_by_k": attempts_by_k,
+                "oracle_calls_by_k": oracle_calls_by_k,
+                "attempt_budget": attempt_budget,
+                "max_grover_iterations": max_grover_iterations,
+                "bbht_lambda": bbht_lambda,
+                "seed": seed,
             }
         
         finally:
